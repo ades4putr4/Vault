@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CyberVault - Secure Personal Storage</title>
+    
+    <!-- Tailwind & Google Fonts -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        @keyframes pulse-slow {
+            0%, 100% { opacity: 0.3; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(1.1); }
+        }
+        .animate-pulse-slow { animation: pulse-slow 8s infinite ease-in-out; }
+        .glass {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        body {
+            background-color: #020617;
+            margin: 0;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: #e2e8f0;
+            overflow-x: hidden;
+        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        
+        /* Animasi Transisi */
+        .fade-in { animation: fadeIn 0.5s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+    <!-- Efek Cahaya Bergerak -->
+    <div class="fixed inset-0 -z-10 bg-slate-950 overflow-hidden">
+        <div class="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-blue-600/20 blur-[120px] animate-pulse-slow"></div>
+        <div class="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-purple-600/20 blur-[120px] animate-pulse-slow" style="animation-delay: 2s;"></div>
+        <div class="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]"></div>
+    </div>
+
+    <!-- UI LOGIN -->
+    <div id="login-screen" class="min-h-screen flex items-center justify-center p-6">
+        <div class="w-full max-w-md p-10 rounded-[3rem] glass border border-blue-500/30 shadow-2xl text-center">
+            <div class="mb-10">
+                <div class="inline-block p-6 rounded-full bg-blue-500/10 border border-blue-500/40 mb-6 animate-pulse">
+                    <i data-lucide="lock" class="w-12 h-12 text-blue-400"></i>
+                </div>
+                <h1 class="text-4xl font-black text-white tracking-tighter mb-2">CYBERVAULT</h1>
+                <p class="text-blue-400/50 text-xs font-bold tracking-[0.3em] uppercase">Security Protocol v3.0</p>
+            </div>
+            <div class="space-y-4">
+                <input id="master-pass" type="password" placeholder="••••••••" class="w-full bg-slate-950/50 border border-white/10 rounded-2xl px-6 py-5 text-white text-center tracking-[1em] focus:border-blue-500/50 outline-none transition-all font-bold">
+                <button onclick="handleLogin()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-5 rounded-2xl shadow-xl shadow-blue-900/40 transition-all active:scale-95 flex items-center justify-center gap-3 tracking-widest uppercase text-sm">
+                    <i data-lucide="shield-check" class="w-5 h-5"></i> Masuk Ke Brankas
+                </button>
+                <p id="login-err" class="text-red-500 text-[10px] font-black h-4 uppercase tracking-wider mt-2"></p>
+            </div>
+            <p class="mt-8 text-[9px] text-slate-600 font-mono tracking-widest">HINT: 1234</p>
+        </div>
+    </div>
+
+    <!-- UI DASHBOARD -->
+    <div id="dashboard" class="hidden min-h-screen pb-20 fade-in">
+        <nav class="sticky top-0 z-40 bg-[#020617]/80 backdrop-blur-xl border-b border-white/5 p-4 md:px-10">
+            <div class="max-w-7xl mx-auto flex items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <div class="p-2 bg-blue-600 rounded-lg shadow-lg">
+                        <i data-lucide="shield" class="w-5 h-5 text-white"></i>
+                    </div>
+                    <h2 class="text-xl font-black tracking-tighter text-white">VAULT.CORE</h2>
+                </div>
+                <div class="flex items-center gap-4">
+                    <button onclick="logout()" class="p-2 text-slate-400 hover:text-red-400 transition-colors">
+                        <i data-lucide="power" class="w-6 h-6"></i>
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <main class="max-w-7xl mx-auto p-4 md:p-10 grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <!-- Sidebar -->
+            <div class="lg:col-span-3 space-y-2">
+                <button onclick="showTab('passwords')" id="btn-passwords" class="nav-btn w-full flex items-center gap-3 p-4 rounded-2xl border border-blue-500/50 bg-blue-500/10 text-blue-400 shadow-xl">
+                    <i data-lucide="key" class="w-5 h-5"></i> <span class="font-bold text-sm tracking-wider uppercase">Credentials</span>
+                </button>
+                <button onclick="showTab('images')" id="btn-images" class="nav-btn w-full flex items-center gap-3 p-4 rounded-2xl border border-transparent text-slate-500 hover:bg-white/10">
+                    <i data-lucide="image" class="w-5 h-5"></i> <span class="font-bold text-sm tracking-wider uppercase">Vault Gambar</span>
+                </button>
+                <button onclick="showTab('notes')" id="btn-notes" class="nav-btn w-full flex items-center gap-3 p-4 rounded-2xl border border-transparent text-slate-500 hover:bg-white/10">
+                    <i data-lucide="file-text" class="w-5 h-5"></i> <span class="font-bold text-sm tracking-wider uppercase">Catatan Rahasia</span>
+                </button>
+            </div>
+
+            <!-- Workspace -->
+            <div class="lg:col-span-9 glass rounded-[2.5rem] p-6 md:p-10 min-h-[600px] shadow-2xl">
+                <!-- Passwords Tab -->
+                <div id="tab-passwords" class="tab-content active fade-in">
+                    <div class="flex justify-between items-center mb-10">
+                        <h3 class="text-2xl font-black text-white uppercase tracking-tight">Data Login</h3>
+                        <button onclick="openModal('modal-pass')" class="p-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl shadow-lg active:scale-90 transition-all">
+                            <i data-lucide="plus"></i>
+                        </button>
+                    </div>
+                    <div id="password-list" class="grid gap-3"></div>
+                </div>
+
+                <!-- Images Tab -->
+                <div id="tab-images" class="tab-content fade-in">
+                    <div class="flex justify-between items-center mb-10">
+                        <h3 class="text-2xl font-black text-white uppercase tracking-tight">Brankas Foto</h3>
+                        <label class="p-3 bg-purple-600 hover:bg-purple-500 text-white rounded-xl shadow-lg cursor-pointer active:scale-90 transition-all">
+                            <i data-lucide="upload"></i>
+                            <input type="file" class="hidden" accept="image/*" onchange="uploadImage(event)">
+                        </label>
+                    </div>
+                    <div id="image-list" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6"></div>
+                </div>
+
+                <!-- Notes Tab -->
+                <div id="tab-notes" class="tab-content fade-in">
+                    <div class="flex justify-between items-center mb-10">
+                        <h3 class="text-2xl font-black text-white uppercase tracking-tight">Catatan Rahasia</h3>
+                        <button onclick="openModal('modal-note')" class="p-3 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl shadow-lg active:scale-90 transition-all">
+                            <i data-lucide="plus"></i>
+                        </button>
+                    </div>
+                    <div id="note-list" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- MODALS -->
+    <div id="modal-pass" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/90 backdrop-blur-md">
+        <div class="w-full max-w-md glass rounded-[2rem] p-8 border border-blue-500/20 shadow-2xl">
+            <h3 class="text-xl font-bold text-white mb-6 uppercase tracking-widest">Tambah Data Baru</h3>
+            <div class="space-y-4">
+                <input id="input-site" class="w-full bg-slate-950 border border-white/10 rounded-2xl px-6 py-4 text-sm focus:border-blue-500 outline-none" placeholder="Nama Situs/Aplikasi">
+                <input id="input-user" class="w-full bg-slate-950 border border-white/10 rounded-2xl px-6 py-4 text-sm focus:border-blue-500 outline-none" placeholder="Username / Email">
+                <input id="input-pass" class="w-full bg-slate-950 border border-white/10 rounded-2xl px-6 py-4 text-sm focus:border-blue-500 outline-none" placeholder="Password">
+                <div class="flex gap-2 pt-4">
+                    <button onclick="closeModal('modal-pass')" class="flex-1 py-4 bg-slate-800 text-white font-bold rounded-2xl text-xs uppercase tracking-widest">Batal</button>
+                    <button onclick="savePassword()" class="flex-1 py-4 bg-blue-600 text-white font-bold rounded-2xl shadow-xl shadow-blue-900/40 text-xs uppercase tracking-widest">Simpan Data</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-note" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/90 backdrop-blur-md">
+        <div class="w-full max-w-md glass rounded-[2rem] p-8 border border-cyan-500/20 shadow-2xl">
+            <h3 class="text-xl font-bold text-white mb-6 uppercase tracking-widest">Catatan Baru</h3>
+            <div class="space-y-4">
+                <input id="input-note-title" class="w-full bg-slate-950 border border-white/10 rounded-2xl px-6 py-4 text-sm focus:border-cyan-500 outline-none" placeholder="Judul Catatan">
+                <textarea id="input-note-content" rows="5" class="w-full bg-slate-950 border border-white/10 rounded-2xl px-6 py-4 text-sm focus:border-cyan-500 outline-none resize-none" placeholder="Isi catatan rahasia..."></textarea>
+                <div class="flex gap-2 pt-4">
+                    <button onclick="closeModal('modal-note')" class="flex-1 py-4 bg-slate-800 text-white font-bold rounded-2xl text-xs uppercase tracking-widest">Batal</button>
+                    <button onclick="saveNote()" class="flex-1 py-4 bg-cyan-600 text-white font-bold rounded-2xl shadow-xl shadow-cyan-900/40 text-xs uppercase tracking-widest">Simpan</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="fixed bottom-10 left-1/2 -translate-x-1/2 px-8 py-3 bg-blue-600 text-white text-[10px] font-black rounded-full shadow-2xl transition-all opacity-0 pointer-events-none tracking-widest uppercase z-[100]">Tersalin ke Clipboard</div>
+
+    <script>
+        // Data Store
+        let passwords = JSON.parse(localStorage.getItem('cv_p') || '[]');
+        let images = JSON.parse(localStorage.getItem('cv_i') || '[]');
+        let notes = JSON.parse(localStorage.getItem('cv_n') || '[]');
+
+        // Initialize Icons
+        window.onload = () => { lucide.createIcons(); renderAll(); };
+
+        // --- AUTH LOGIC ---
+        function handleLogin() {
+            const pass = document.getElementById('master-pass').value;
+            if (pass === '1234') {
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('dashboard').classList.remove('hidden');
+                lucide.createIcons();
+            } else {
+                const err = document.getElementById('login-err');
+                err.innerText = "KATA SANDI SALAH!";
+                setTimeout(() => err.innerText = "", 3000);
+            }
+        }
+
+        function logout() {
+            location.reload();
+        }
+
+        // --- NAVIGATION ---
+        function showTab(tabId) {
+            // Update UI Active Tab
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.getElementById('tab-' + tabId).classList.add('active');
+
+            // Update Nav Buttons
+            document.querySelectorAll('.nav-btn').forEach(b => {
+                b.classList.remove('bg-blue-500/10', 'border-blue-500/50', 'text-blue-400', 'shadow-xl');
+                b.classList.add('border-transparent', 'text-slate-500');
+            });
+
+            const activeBtn = document.getElementById('btn-' + tabId);
+            activeBtn.classList.add('bg-blue-500/10', 'border-blue-500/50', 'text-blue-400', 'shadow-xl');
+            activeBtn.classList.remove('border-transparent', 'text-slate-500');
+
+            lucide.createIcons();
+        }
+
+        // --- MODAL HELPERS ---
+        function openModal(id) { document.getElementById(id).classList.remove('hidden'); document.getElementById(id).classList.add('flex'); }
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); document.getElementById(id).classList.remove('flex'); }
+
+        // --- CRUD PASSWORDS ---
+        function savePassword() {
+            const site = document.getElementById('input-site').value;
+            const user = document.getElementById('input-user').value;
+            const pass = document.getElementById('input-pass').value;
+
+            if (site && pass) {
+                passwords.unshift({ id: Date.now(), site, user, pass, visible: false });
+                localStorage.setItem('cv_p', JSON.stringify(passwords));
+                renderPasswords();
+                closeModal('modal-pass');
+                document.getElementById('input-site').value = '';
+                document.getElementById('input-user').value = '';
+                document.getElementById('input-pass').value = '';
+            }
+        }
+
+        function deletePass(id) {
+            passwords = passwords.filter(p => p.id !== id);
+            localStorage.setItem('cv_p', JSON.stringify(passwords));
+            renderPasswords();
+        }
+
+        function togglePass(id) {
+            passwords = passwords.map(p => p.id === id ? {...p, visible: !p.visible} : p);
+            renderPasswords();
+        }
+
+        function copyPass(text) {
+            navigator.clipboard.writeText(text);
+            const t = document.getElementById('toast');
+            t.style.opacity = '1';
+            setTimeout(() => t.style.opacity = '0', 2000);
+        }
+
+        function renderPasswords() {
+            const list = document.getElementById('password-list');
+            list.innerHTML = passwords.length ? '' : '<div class="text-center py-20 text-slate-700 font-bold uppercase tracking-widest text-[10px]">Kosong</div>';
+            
+            passwords.forEach(p => {
+                const div = document.createElement('div');
+                div.className = "flex flex-col sm:flex-row sm:items-center justify-between p-5 rounded-3xl bg-slate-900/60 border border-white/5 hover:border-blue-500/30 transition-all gap-4";
+                div.innerHTML = `
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-2xl bg-blue-600/10 flex items-center justify-center font-black text-blue-500 border border-blue-500/20 text-xl">${p.site[0]}</div>
+                        <div>
+                            <h4 class="font-bold text-white text-lg leading-none mb-1">${p.site}</h4>
+                            <p class="text-[10px] font-mono text-slate-500 tracking-tighter uppercase">${p.user || 'Guest'}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="bg-black/60 px-4 py-3 rounded-2xl border border-white/5 font-mono text-blue-400 text-sm flex items-center gap-6">
+                            <span class="tracking-[0.3em] font-bold">${p.visible ? p.pass : '••••••••'}</span>
+                            <button onclick="togglePass(${p.id})"><i data-lucide="${p.visible ? 'eye-off' : 'eye'}" class="w-4 h-4"></i></button>
+                        </div>
+                        <button onclick="copyPass('${p.pass}')" class="p-3 text-slate-500 hover:text-white"><i data-lucide="copy" class="w-5 h-5"></i></button>
+                        <button onclick="deletePass(${p.id})" class="p-3 text-slate-500 hover:text-red-500"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
+                    </div>
+                `;
+                list.appendChild(div);
+            });
+            lucide.createIcons();
+        }
+
+        // --- CRUD IMAGES ---
+        function uploadImage(e) {
+            const file = e.target.files[0];
+            if (file) {
+                if (file.size > 1.5 * 1024 * 1024) { return alert("Ukuran file terlalu besar (Max 1.5MB)"); }
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    images.unshift({ id: Date.now(), url: reader.result });
+                    localStorage.setItem('cv_i', JSON.stringify(images));
+                    renderImages();
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function deleteImage(id) {
+            images = images.filter(i => i.id !== id);
+            localStorage.setItem('cv_i', JSON.stringify(images));
+            renderImages();
+        }
+
+        function renderImages() {
+            const list = document.getElementById('image-list');
+            list.innerHTML = images.length ? '' : '<div class="col-span-full text-center py-20 text-slate-700 font-bold uppercase tracking-widest text-[10px]">Belum ada gambar</div>';
+            
+            images.forEach(img => {
+                const div = document.createElement('div');
+                div.className = "relative aspect-square rounded-[2rem] overflow-hidden border border-white/10 group shadow-2xl";
+                div.innerHTML = `
+                    <img src="${img.url}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-125">
+                    <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <button onclick="deleteImage(${img.id})" class="p-4 bg-red-600 rounded-full text-white shadow-xl active:scale-90 transition-transform">
+                            <i data-lucide="trash-2" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                `;
+                list.appendChild(div);
+            });
+            lucide.createIcons();
+        }
+
+        // --- CRUD NOTES ---
+        function saveNote() {
+            const title = document.getElementById('input-note-title').value;
+            const content = document.getElementById('input-note-content').value;
+            if (title && content) {
+                notes.unshift({ id: Date.now(), title, content, date: new Date().toLocaleDateString('id-ID') });
+                localStorage.setItem('cv_n', JSON.stringify(notes));
+                renderNotes();
+                closeModal('modal-note');
+                document.getElementById('input-note-title').value = '';
+                document.getElementById('input-note-content').value = '';
+            }
+        }
+
+        function deleteNote(id) {
+            notes = notes.filter(n => n.id !== id);
+            localStorage.setItem('cv_n', JSON.stringify(not
