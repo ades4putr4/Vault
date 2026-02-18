@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ultra Storage 5.0</title>
+
+<style>
+*{
+box-sizing:border-box;
+margin:0;
+padding:0;
+font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,sans-serif;
+}
+
+body{
+background:#0f172a;
+color:#e2e8f0;
+display:flex;
+min-height:100vh;
+overflow:hidden;
+}
+
+/* SIDEBAR */
+.sidebar{
+width:250px;
+background:#111827;
+padding:25px;
+display:flex;
+flex-direction:column;
+justify-content:space-between;
+transition:0.3s;
+}
+
+.sidebar.collapsed{
+width:70px;
+}
+
+.sidebar h2{
+margin-bottom:20px;
+font-size:18px;
+}
+
+.sidebar button{
+margin-bottom:8px;
+padding:10px;
+border:none;
+border-radius:8px;
+background:#1f2937;
+color:white;
+cursor:pointer;
+text-align:left;
+transition:0.2s;
+}
+
+.sidebar button:hover{
+background:#374151;
+}
+
+/* MAIN */
+.main{
+flex:1;
+padding:30px;
+overflow:auto;
+position:relative;
+}
+
+/* HEADER */
+.header{
+display:flex;
+justify-content:space-between;
+align-items:center;
+margin-bottom:25px;
+}
+
+.header h1{
+font-size:22px;
+font-weight:600;
+}
+
+/* GRID */
+.note-grid{
+display:grid;
+grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
+gap:20px;
+}
+
+/* NOTE CARD */
+.note{
+background:#1e293b;
+padding:18px;
+border-radius:14px;
+cursor:grab;
+transition:0.3s;
+}
+
+.note:hover{
+transform:translateY(-4px);
+box-shadow:0 10px 25px rgba(0,0,0,0.4);
+}
+
+.note img{
+width:100%;
+margin-top:8px;
+border-radius:8px;
+}
+
+.note small{
+font-size:12px;
+opacity:0.6;
+}
+
+.note .tags{
+margin-top:8px;
+font-size:12px;
+color:#60a5fa;
+}
+
+.note button{
+margin-top:8px;
+margin-right:5px;
+padding:5px 8px;
+border:none;
+border-radius:6px;
+cursor:pointer;
+font-size:11px;
+}
+
+.favorite{background:#f59e0b;color:white}
+.delete{background:#ef4444;color:white}
+.edit{background:#3b82f6;color:white}
+.restore{background:#10b981;color:white}
+
+/* FLOATING BUTTON */
+.fab{
+position:fixed;
+bottom:25px;
+right:25px;
+width:60px;
+height:60px;
+border-radius:50%;
+background:#3b82f6;
+display:flex;
+align-items:center;
+justify-content:center;
+font-size:30px;
+cursor:pointer;
+box-shadow:0 10px 30px rgba(0,0,0,0.4);
+}
+
+/* MODAL */
+.modal{
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,0.7);
+display:flex;
+align-items:center;
+justify-content:center;
+}
+
+.modal-content{
+background:#1e293b;
+padding:25px;
+border-radius:14px;
+width:90%;
+max-width:400px;
+}
+
+input,textarea{
+width:100%;
+padding:10px;
+margin-top:10px;
+border-radius:8px;
+border:1px solid #334155;
+background:#0f172a;
+color:white;
+}
+
+button.primary{
+margin-top:12px;
+padding:10px;
+border:none;
+border-radius:8px;
+background:#3b82f6;
+color:white;
+cursor:pointer;
+}
+
+/* MOBILE */
+@media(max-width:768px){
+.sidebar{
+position:fixed;
+left:-250px;
+top:0;
+height:100%;
+z-index:100;
+}
+
+.sidebar.active{
+left:0;
+}
+
+.main{
+padding:20px;
+}
+}
+</style>
+</head>
+<body>
+
+<div class="sidebar" id="sidebar">
+<div>
+<h2>Ultra 5.0</h2>
+<button onclick="setView('all')">📒 All</button>
+<button onclick="setView('favorites')">⭐ Fav</button>
+<button onclick="setView('archive')">📦 Archive</button>
+<button onclick="setView('trash')">🗑 Trash</button>
+<button onclick="setView('analytics')">📊 Stats</button>
+</div>
+<div>
+<button onclick="toggleSidebar()">☰</button>
+<button onclick="backupData()">💾 Backup</button>
+<input type="file" onchange="restoreData(event)">
+</div>
+</div>
+
+<div class="main">
+
+<div class="header">
+<h1 id="pageTitle">All Notes</h1>
+<div id="datetime"></div>
+</div>
+
+<div id="analyticsView" class="hidden">
+<p>Total: <b id="totalNotes"></b></p>
+<p>Fav: <b id="totalFav"></b></p>
+<p>Archive: <b id="totalArchive"></b></p>
+<p>Trash: <b id="totalTrash"></b></p>
+</div>
+
+<div id="noteList" class="note-grid"></div>
+
+</div>
+
+<div class="fab" onclick="openModal()">+</div>
+
+<div id="modal" class="modal hidden">
+<div class="modal-content">
+<h3>Buat Note</h3>
+<input type="hidden" id="editIndex">
+<input type="text" id="noteTitle" placeholder="Judul">
+<textarea id="noteContent" placeholder="Isi"></textarea>
+<input type="text" id="noteTags" placeholder="#tag1 #tag2">
+<input type="file" id="noteImages" multiple>
+<button class="primary" onclick="saveNote()">Simpan</button>
+<button onclick="closeModal()">Batal</button>
+</div>
+</div>
+
+<script>
+let user="default";
+let view="all";
+
+setInterval(()=>{
+datetime.innerText=new Date().toLocaleString("id-ID");
+},1000);
+
+function getNotes(){
+return JSON.parse(localStorage.getItem("notes_"+user))||[];
+}
+
+function setNotes(data){
+localStorage.setItem("notes_"+user,JSON.stringify(data));
+}
+
+function setView(v){
+view=v;
+pageTitle.innerText=v.toUpperCase();
+renderNotes();
+}
+
+function openModal(){
+modal.classList.remove("hidden");
+}
+
+function closeModal(){
+modal.classList.add("hidden");
+editIndex.value="";
+}
+
+function saveNote(){
+let notes=getNotes();
+const index=editIndex.value;
+
+const data={
+title:noteTitle.value,
+content:noteContent.value,
+tags:noteTags.value,
+images:[],
+favorite:false,
+archived:false,
+deleted:false,
+date:new Date().toLocaleString("id-ID")
+};
+
+if(index==="") notes.push(data);
+else notes[index]=data;
+
+setNotes(notes);
+closeModal();
+renderNotes();
+}
+
+function renderNotes(){
+let notes=getNotes();
+noteList.innerHTML="";
+analyticsView.classList.add("hidden");
+
+if(view==="analytics"){
+analyticsView.classList.remove("hidden");
+totalNotes.innerText=notes.length;
+totalFav.innerText=notes.filter(n=>n.favorite).length;
+totalArchive.innerText=notes.filter(n=>n.archived).length;
+totalTrash.innerText=notes.filter(n=>n.deleted).length;
+return;
+}
+
+notes.forEach((n,i)=>{
+if(view==="favorites" && !n.favorite) return;
+if(view==="archive" && !n.archived) return;
+if(view==="trash" && !n.deleted) return;
+if(view==="all" && (n.archived||n.deleted)) return;
+
+noteList.innerHTML+=`
+<div class="note" draggable="true">
+<h4>${n.title}</h4>
+<p>${n.content}</p>
+<small>${n.date}</small>
+<div class="tags">${n.tags}</div>
+<button class="favorite" onclick="toggleFav(${i})">⭐</button>
+<button class="edit" onclick="editNote(${i})">Edit</button>
+<button class="delete" onclick="deleteNote(${i})">Delete</button>
+</div>
+`;
+});
+}
+
+function toggleFav(i){
+let notes=getNotes();
+notes[i].favorite=!notes[i].favorite;
+setNotes(notes);
+renderNotes();
+}
+
+function editNote(i){
+let notes=getNotes();
+noteTitle.value=notes[i].title;
+noteContent.value=notes[i].content;
+noteTags.value=notes[i].tags;
+editIndex.value=i;
+openModal();
+}
+
+function deleteNote(i){
+let notes=getNotes();
+notes[i].deleted=true;
+setNotes(notes);
+renderNotes();
+}
+
+function toggleSidebar(){
+sidebar.classList.toggle("active");
+}
+
+function backupData(){
+const data=JSON.stringify(getNotes());
+const blob=new Blob([data],{type:"application/json"});
+const a=document.createElement("a");
+a.href=URL.createObjectURL(blob);
+a.download="backup.json";
+a.click();
+}
+
+function restoreData(e){
+const reader=new FileReader();
+reader.onload=function(){
+setNotes(JSON.parse(reader.result));
+renderNotes();
+};
+reader.readAsText(e.target.files[0]);
+}
+
+renderNotes();
+</script>
+
+</body>
+</html>
