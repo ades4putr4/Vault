@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MyVault Pro - Secure Digital Brankas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+        
+        :root {
+            --accent: #10b981;
+            --bg: #050505;
+        }
+
+        body { 
+            background-color: var(--bg); 
+            color: #e2e8f0; 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            transition: all 0.5s ease;
+        }
+
+        .glass { 
+            background: rgba(255, 255, 255, 0.03); 
+            border: 1px solid rgba(255, 255, 255, 0.08); 
+            backdrop-filter: blur(12px); 
+        }
+
+        .pin-dot { 
+            width: 14px; height: 14px; border-radius: 50%; 
+            border: 2px solid #1e293b; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+        }
+
+        .pin-dot.active { 
+            background-color: var(--accent); 
+            border-color: var(--accent); 
+            box-shadow: 0 0 20px var(--accent); 
+            transform: scale(1.2);
+        }
+
+        .theme-emerald { --accent: #10b981; --bg: #050505; }
+        .theme-purple { --accent: #a855f7; --bg: #0a0510; }
+        .theme-blue { --accent: #3b82f6; --bg: #050a10; }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .animate-slide-up { animation: slideUp 0.4s ease-out forwards; }
+    </style>
+</head>
+<body class="theme-emerald overflow-x-hidden">
+
+    <!-- Efek Cahaya Latar -->
+    <div class="fixed top-[-10%] left-[-10%] w-[500px] h-[500px] rounded-full opacity-20 blur-[120px]" style="background: var(--accent); z-index: -1;"></div>
+
+    <div id="app">
+        <!-- 1. LAYAR LOGIN -->
+        <div id="login-screen" class="min-h-screen flex flex-col items-center justify-center p-6 text-center animate-slide-up">
+            <div class="mb-8 p-6 rounded-[2.5rem] bg-white/5 border border-white/10 shadow-2xl">
+                <i data-lucide="shield" class="w-16 h-16" style="color: var(--accent);"></i>
+            </div>
+            <h1 class="text-4xl font-extrabold mb-2 text-white tracking-tighter">MyVault <span class="text-xs font-black uppercase px-2 py-1 rounded bg-white/10 ml-2" style="color: var(--accent);">PRO</span></h1>
+            <p class="text-slate-500 mb-10 text-sm font-medium tracking-wide uppercase">Masukkan PIN untuk membuka akses</p>
+
+            <div class="flex gap-5 mb-12">
+                <div class="pin-dot" id="dot-0"></div>
+                <div class="pin-dot" id="dot-1"></div>
+                <div class="pin-dot" id="dot-2"></div>
+                <div class="pin-dot" id="dot-3"></div>
+            </div>
+
+            <div class="grid grid-cols-3 gap-5 w-full max-w-sm">
+                <script>
+                    for(let i=1; i<=9; i++) {
+                        document.write(`<button onclick="pressPin('${i}')" class="h-20 rounded-[2rem] bg-white/[0.03] border border-white/5 text-3xl font-bold hover:bg-white/10 active:scale-90 transition-all">${i}</button>`);
+                    }
+                </script>
+                <button onclick="handleBio()" class="h-20 rounded-[2rem] flex items-center justify-center text-slate-500 hover:text-white transition-all"><i data-lucide="fingerprint" class="w-8 h-8"></i></button>
+                <button onclick="pressPin('0')" class="h-20 rounded-[2rem] bg-white/[0.03] border border-white/5 text-3xl font-bold hover:bg-white/10 active:scale-90 transition-all">0</button>
+                <button onclick="clearPin()" class="h-20 rounded-[2rem] flex items-center justify-center text-slate-500"><i data-lucide="delete" class="w-8 h-8"></i></button>
+            </div>
+        </div>
+
+        <!-- 2. LAYAR DASHBOARD -->
+        <div id="main-screen" class="hidden min-h-screen flex flex-col animate-slide-up">
+            <header class="p-6 border-b border-white/5 glass sticky top-0 z-30 flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <div class="p-2.5 rounded-2xl text-black shadow-lg" style="background: var(--accent);"><i data-lucide="shield" class="w-5 h-5"></i></div>
+                    <span class="font-black text-xl text-white tracking-tighter">MyVault</span>
+                </div>
+                
+                <div class="flex items-center gap-2">
+                    <!-- Theme Toggle -->
+                    <button onclick="cycleTheme()" class="p-3 bg-white/5 rounded-2xl text-slate-400 hover:text-white transition-all"><i data-lucide="palette" class="w-5 h-5"></i></button>
+                    <button onclick="lockApp()" class="p-3 bg-red-500/10 rounded-2xl text-red-400 hover:bg-red-500 hover:text-white transition-all ml-2"><i data-lucide="log-out" class="w-5 h-5"></i></button>
+                </div>
+            </header>
+
+            <main class="p-6 max-w-6xl mx-auto w-full">
+                <!-- Search -->
+                <div class="relative mb-10 group">
+                    <i data-lucide="search" class="absolute left-6 top-1/2 -translate-y-1/2 text-slate-500 w-5 h-5 group-focus-within:text-white transition-all"></i>
+                    <input id="search-bar" type="text" oninput="renderList()" placeholder="Cari layanan atau catatan..." class="w-full bg-white/5 border border-white/10 py-5 pl-16 pr-8 rounded-[2rem] outline-none focus:border-white/20 transition-all font-medium">
+                </div>
+
+                <div class="flex justify-between items-end mb-8">
+                    <div>
+                        <h2 class="text-3xl font-black text-white tracking-tight">Koleksi Rahasia</h2>
+                        <p id="vault-count" class="text-slate-500 text-sm mt-1 uppercase tracking-widest font-bold">0 Item Tersimpan</p>
+                    </div>
+                </div>
+
+                <div id="vault-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Cards via JS -->
+                </div>
+
+                <div id="empty-state" class="hidden py-32 text-center opacity-30">
+                    <i data-lucide="folder-open" class="mx-auto w-16 h-16 mb-4"></i>
+                    <p class="font-bold uppercase tracking-widest text-sm">Gudang Kosong</p>
+                </div>
+            </main>
+
+            <!-- Floating Action Button -->
+            <button onclick="toggleAddModal(true)" class="fixed bottom-10 right-10 px-8 py-5 text-black font-black rounded-[2.5rem] shadow-2xl hover:scale-105 active:scale-95 transition-all flex items-center gap-3 z-40 text-lg shadow-emerald-500/20" style="background: var(--accent);">
+                <i data-lucide="plus" class="w-7 h-7"></i>
+                TAMBAH DATA
+            </button>
+        </div>
+    </div>
+
+    <!-- 3. MODAL TAMBAH DATA -->
+    <div id="add-modal" class="fixed inset-0 bg-black/90 backdrop-blur-xl hidden z-50 p-6 flex items-center justify-center animate-slide-up">
+        <div class="bg-[#0f0f0f] w-full max-w-xl rounded-[3rem] border border-white/10 p-10 space-y-6 shadow-2xl overflow-y-auto no-scrollbar max-h-[90vh]">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-2xl font-black text-white tracking-tight">SIMPAN DATA BARU</h3>
+                <button onclick="toggleAddModal(false)" class="p-2 text-slate-500 hover:text-white"><i data-lucide="x" class="w-7 h-7"></i></button>
+            </div>
+            
+            <div class="space-y-4">
+                <div class="space-y-1">
+                    <label class="text-[10px] font-black text-slate-600 uppercase tracking-widest ml-4">Layanan / Judul</label>
+                    <input id="in-name" type="text" placeholder="Contoh: Akun Instagram" class="w-full bg-white/5 border border-white/10 p-5 rounded-2xl outline-none focus:border-white/20 text-white font-bold">
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-black text-slate-600 uppercase tracking-widest ml-4">Username / Email</label>
+                        <input id="in-user" type="text" placeholder="user@mail.com" class="w-full bg-white/5 border border-white/10 p-5 rounded-2xl outline-none focus:border-white/20 text-white">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-black text-slate-600 uppercase tracking-widest ml-4">Kategori</label>
+                        <select id="in-cat" class="w-full bg-white/5 border border-white/10 p-5 rounded-2xl outline-none text-white appearance-none">
+                            <option>Personal</option><option>Keuangan</option><option>Pekerjaan</option><option>Sosial</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="space-y-1">
+                    <label class="text-[10px] font-black text-slate-600 uppercase tracking-widest ml-4">Password</label>
+                    <input id="in-pass" type="text" placeholder="••••••••" class="w-full bg-white/5 border border-white/10 p-5 rounded-2xl outline-none focus:border-white/20 text-white font-mono tracking-widest">
+                </div>
+
+                <div class="space-y-1">
+                    <label class="text-[10px] font-black text-slate-600 uppercase tracking-widest ml-4">Lampiran Gambar / File</label>
+                    <div onclick="document.getElementById('in-file').click()" class="w-full aspect-video rounded-3xl border-2 border-dashed border-white/10 flex flex-col items-center justify-center bg-white/[0.02] cursor-pointer hover:border-white/20 transition-all overflow-hidden relative group">
+                        <img id="preview-img" class="hidden absolute inset-0 w-full h-full object-cover opacity-50">
+                        <div id="upload-hint" class="text-center z-10">
+                            <i data-lucide="upload-cloud" class="mx-auto w-10 h-10 mb-2 text-slate-600 group-hover:text-white transition-all"></i>
+                            <p class="text-slate-600 group-hover:text-white text-[10px] font-bold uppercase tracking-widest transition-all">Pilih Foto (Max 800KB)</p>
+                        </div>
+                    </div>
+                    <input id="in-file" type="file" accept="image/*" class="hidden" onchange="previewFile(event)">
+                </div>
+            </div>
+
+            <button onclick="saveData()" class="w-full py-5 text-black font-black rounded-3xl shadow-xl transition-all uppercase tracking-widest flex items-center justify-center gap-3" style="background: var(--accent);">
+                <i data-lucide="save" class="w-5 h-5"></i> SIMPAN RAHASIA
+            </button>
+        </div>
+    </div>
+
+    <!-- 4. MODAL DETAIL DATA -->
+    <div id="detail-modal" class="fixed inset-0 bg-black/95 backdrop-blur-2xl hidden z-[60] p-6 flex items-center justify-center animate-slide-up">
+        <div id="detail-content" class="bg-[#0f0f0f] w-full max-w-2xl rounded-[3.5rem] border border-white/10 p-12 space-y-8 shadow-2xl relative overflow-y-auto no-scrollbar max-h-[90vh]">
+            <!-- Detail Content via JS -->
+        </div>
+    </div>
+
+    <script>
+        let currentPin = "";
+        let masterPin = "1234";
+        let vaultData = JSON.parse(localStorage.getItem('myvault_v2_data') || "[]");
+        let themes = ["theme-emerald", "theme-purple", "theme-blue"];
+        let currentThemeIndex = 0;
+        let tempFileBase64 = "";
+
+        // --- SISTEM TEMA ---
+        function cycleTheme() {
+            document.body.classList.remove(themes[currentThemeIndex]);
+            currentThemeIndex = (currentThemeIndex + 1) % themes.length;
+            document.body.classList.add(themes[currentThemeIndex]);
+            localStorage.setItem('myvault_theme', themes[currentThemeIndex]);
+        }
+
+        // --- SISTEM PIN ---
+        function pressPin(num) {
+            if (currentPin.length < 4) {
+                currentPin += num;
+                updateDots();
+                if (currentPin === masterPin) {
+                    setTimeout(unlock, 200);
+                } else if (currentPin.length === 4) {
+                    setTimeout(() => {
+                        alert("Akses Ditolak: PIN Salah!");
+                        clearPin();
+                    }, 200);
+                }
+            }
+        }
+
+        function clearPin() {
+            currentPin = "";
+            updateDots();
+        }
+
+        function updateDots() {
+            for(let i=0; i<4; i++) {
+                document.getElementById(`dot-${i}`).classList.toggle('active', i < currentPin.length);
+            }
+        }
+
+        function handleBio() {
+            alert("Memindai Biometrik...");
+            setTimeout(unlock, 1000);
+        }
+
+        function unlock() {
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('main-screen').classList.remove('hidden');
+            renderList();
+            lucide.createIcons();
+        }
+
+        function lockApp() {
+            location.reload();
+        }
+
+        // --- SISTEM DATA ---
+        function toggleAddModal(show) {
+            document.getElementById('add-modal').classList.toggle('hidden', !show);
+            if(!show) resetForm();
+        }
+
+        function resetForm() {
+            document.getElementById('in-name').value = "";
+            document.getElementById('in-user').value = "";
+            document.getElementById('in-pass').value = "";
+            document.getElementById('preview-img').classList.add('hidden');
+            document.getElementById('upload-hint').classList.remove('hidden');
+            tempFileBase64 = "";
+        }
+
+        function previewFile(e) {
+            const file = e.target.files[0];
+            if (file) {
+                if (file.size > 900000) {
+                    alert("File terlalu besar! Maksimal 800KB.");
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    tempFileBase64 = reader.result;
+                    const img = document.getElementById('preview-img');
+                    img.src = reader.result;
+                    img.classList.remove('hidden');
+                    document.getElementById('upload-hint').classList.add('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function saveData() {
+            const name = document.getElementById('in-name').value;
+            const user = document.getElementById('in-user').value;
+            const cat = document.getElementById('in-cat').value;
+            const pass = document.getElementById('in-pass').value;
+
+            if(!name || !pass) {
+                alert("Minimal isi Judul dan Password!");
+                return;
+            }
+
+            const newData = { 
+                id: Date.now(), 
+                name, 
+                user, 
+                cat, 
+                pass, 
+                file: tempFileBase64,
+                date: new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
+            };
+            
+            vaultData.unshift(newData);
+            localStorage.setItem('myvault_v2_data', JSON.stringify(vaultData));
+            
+            toggleAddModal(false);
+            renderList();
+        }
+
+        function deleteData(id) {
+            if(confirm("Hapus rahasia ini selamanya?")) {
+                vaultData = vaultData.filter(item => item.id !== id);
+                localStorage.setItem('myvault_v2_data', JSON.stringify(vaultData));
+                closeDetail();
+                renderList();
+            }
+        }
+
+        function openDetail(id) {
+            const item = vaultData.find(i => i.id === id);
+            if(!item) return;
+
+            const content = document.getElementById('detail-content');
+            content.innerHTML = `
+                <button onclick="closeDetail()" class="absolute top-8 right-8 text-slate-500 hover:text-white"><i data-lucide="x" class="w-8 h-8"></i></button>
+                
+                <div class="flex items-center gap-6 mb-10">
+                    <div class="w-20 h-20 rounded-[1.5rem] flex items-center justify-center text-black font-black text-3xl shadow-xl" style="background: var(--accent);">
+                        ${item.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                        <h2 class="text-4xl font-black text-white tracking-tighter">${item.name}</h2>
+                        <span class="text-slate-500 uppercase tracking-widest text-xs font-bold">${item.cat} • ${item.date}</span>
+                    </div>
+                </div>
+
+                <div class="grid gap-6">
+                    <div class="p-6 rounded-3xl bg-white/5 border border-white/5 group relative">
+                        <p class="text-[10px] font-black text-slate-600 uppercase tracking-widest mb-1">Username / Email</p>
+                        <p class="text-lg font-bold text-white">${item.user || '-'}</p>
+                        <button onclick="copyToClipboard('${item.user}')" class="absolute right-6 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all text-emerald-500"><i data-lucide="copy" class="w-5 h-5"></i></button>
+                    </div>
+
+                    <div class="p-6 rounded-3xl bg-white/5 border border-white/5 group relative">
+                        <p class="text-[10px] font-black text-slate-600 uppercase tracking-widest mb-1">Password Rahasia</p>
+                        <p class="text-2xl font-mono font-black text-emerald-400 tracking-[0.2em]">${item.pass}</p>
+                        <button onclick="copyToClipboard('${item.pass}')" class="absolute right-6 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all text-emerald-500"><i data-lucide="copy" class="w-5 h-5"></i></button>
+                    </div>
+
+                    ${item.file ? `
+                    <div class="space-y-3">
+                        <p class="text-[10px] font-black text-slate-600 uppercase tracking-widest ml-4">Lampiran Bukti / File</p>
+                        <div class="rounded-3xl border border-white/10 overflow-hidden shadow-2xl">
+                            <img src="${item.file}" class="w-full h-auto max-h-[400px] object-contain bg-black/50">
+                        </div>
+                    </div>
+                    ` : ''}
+                </div>
+
+                <div class="pt-10 flex gap-4">
+                    <button onclick="deleteData(${item.id})" class="flex-1 py-5 bg-red-500/10 text-red-500 rounded-3xl font-black text-sm uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all">Hapus Permanen</button>
+                    <button onclick="closeDetail()" class="px-10 py-5 bg-white/5 text-slate-500 rounded-3xl font-black text-sm uppercase tracking-widest">Tutup</button>
+                </div>
+            `;
+
+            document.getElementById('detail-modal').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeDetail() {
+            document.getElementById('detail-modal').classList.add('hidden');
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text);
+            alert("Berhasil disalin!");
+        }
+
+        function renderList() {
+            const list = document.getElementById('vault-list');
+            const search = document.g
