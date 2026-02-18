@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MyVault Pro - Ultimate Stability</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+        
+        :root {
+            --accent: #10b981;
+            --bg: #050505;
+        }
+
+        body { 
+            background-color: var(--bg); 
+            color: #e2e8f0; 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            transition: all 0.5s ease;
+            user-select: none;
+            overflow-x: hidden;
+        }
+
+        .glass { 
+            background: rgba(255, 255, 255, 0.03); 
+            border: 1px solid rgba(255, 255, 255, 0.08); 
+            backdrop-filter: blur(12px); 
+        }
+
+        .pin-dot { 
+            width: 14px; height: 14px; border-radius: 50%; 
+            border: 2px solid #1e293b; transition: all 0.2s ease; 
+        }
+
+        .pin-dot.filled { 
+            background-color: var(--accent) !important; 
+            border-color: var(--accent) !important; 
+            box-shadow: 0 0 15px var(--accent); 
+            transform: scale(1.2);
+        }
+
+        .theme-emerald { --accent: #10b981; --bg: #050505; }
+        .theme-purple { --accent: #a855f7; --bg: #0a0510; }
+        .theme-blue { --accent: #3b82f6; --bg: #050a10; }
+
+        .keypad-btn {
+            height: 70px;
+            border-radius: 1.25rem;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 1.5rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.2s;
+        }
+        .keypad-btn:active { transform: scale(0.9); background: var(--accent); color: black; }
+
+        @keyframes slideUp {
+            from { transform: translateY(10px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .animate-up { animation: slideUp 0.3s ease-out forwards; }
+    </style>
+</head>
+<body class="theme-emerald">
+
+    <div id="bg-glow" class="fixed top-[-10%] left-[-10%] w-[500px] h-[500px] rounded-full opacity-10 blur-[120px]" style="background: var(--accent); z-index: -1;"></div>
+
+    <div id="app">
+        <!-- SCREEN 1: LOGIN -->
+        <div id="login-screen" class="min-h-screen flex flex-col items-center justify-center p-6 text-center animate-up">
+            <div class="mb-6 p-5 rounded-[2rem] bg-white/5 border border-white/10">
+                <i data-lucide="shield" class="w-12 h-12" style="color: var(--accent);"></i>
+            </div>
+            <h1 class="text-3xl font-black mb-1 text-white">MyVault <span class="text-xs opacity-50">PRO</span></h1>
+            <p class="text-slate-500 mb-10 text-xs font-bold uppercase tracking-widest">Masukkan PIN: 1234</p>
+
+            <div class="flex gap-4 mb-10" id="pin-dots">
+                <div class="pin-dot"></div><div class="pin-dot"></div>
+                <div class="pin-dot"></div><div class="pin-dot"></div>
+            </div>
+
+            <div class="grid grid-cols-3 gap-4 w-full max-w-[280px]">
+                <button onclick="window.pressPin('1')" class="keypad-btn">1</button>
+                <button onclick="window.pressPin('2')" class="keypad-btn">2</button>
+                <button onclick="window.pressPin('3')" class="keypad-btn">3</button>
+                <button onclick="window.pressPin('4')" class="keypad-btn">4</button>
+                <button onclick="window.pressPin('5')" class="keypad-btn">5</button>
+                <button onclick="window.pressPin('6')" class="keypad-btn">6</button>
+                <button onclick="window.pressPin('7')" class="keypad-btn">7</button>
+                <button onclick="window.pressPin('8')" class="keypad-btn">8</button>
+                <button onclick="window.pressPin('9')" class="keypad-btn">9</button>
+                <button onclick="window.handleBio()" class="keypad-btn opacity-30"><i data-lucide="fingerprint"></i></button>
+                <button onclick="window.pressPin('0')" class="keypad-btn">0</button>
+                <button onclick="window.clearPin()" class="keypad-btn opacity-30"><i data-lucide="delete"></i></button>
+            </div>
+        </div>
+
+        <!-- SCREEN 2: DASHBOARD -->
+        <div id="main-screen" class="hidden min-h-screen flex flex-col animate-up">
+            <header class="p-4 border-b border-white/5 glass sticky top-0 z-30 flex justify-between items-center">
+                <div class="flex items-center gap-2">
+                    <div class="p-2 rounded-lg text-black" style="background: var(--accent);"><i data-lucide="shield" class="w-4 h-4"></i></div>
+                    <span class="font-bold text-white tracking-tight">MyVault</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="window.cycleTheme()" class="p-2.5 bg-white/5 rounded-xl text-slate-400"><i data-lucide="palette" class="w-5 h-5"></i></button>
+                    <button onclick="window.lockApp()" class="p-2.5 bg-red-500/10 rounded-xl text-red-400 ml-2"><i data-lucide="log-out" class="w-5 h-5"></i></button>
+                </div>
+            </header>
+
+            <main class="p-6 max-w-5xl mx-auto w-full">
+                <div class="relative mb-8">
+                    <i data-lucide="search" class="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500 w-4 h-4"></i>
+                    <input id="search-bar" type="text" oninput="window.renderList()" placeholder="Cari..." class="w-full bg-white/5 border border-white/10 py-4 pl-12 pr-6 rounded-2xl outline-none focus:border-white/20">
+                </div>
+
+                <div class="mb-6 flex justify-between items-center">
+                    <h2 class="text-xl font-bold text-white">Gudang Data</h2>
+                    <p id="vault-count" class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">0 Items</p>
+                </div>
+
+                <div id="vault-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+                <div id="empty-state" class="hidden py-20 text-center opacity-20">
+                    <i data-lucide="inbox" class="mx-auto w-10 h-10 mb-2"></i>
+                    <p class="text-xs uppercase font-bold tracking-widest">Belum ada data</p>
+                </div>
+            </main>
+
+            <button onclick="window.toggleAddModal(true)" class="fixed bottom-8 right-8 px-6 py-4 text-black font-black rounded-2xl shadow-2xl flex items-center gap-2 z-40 text-sm" style="background: var(--accent);">
+                <i data-lucide="plus" class="w-5 h-5"></i> TAMBAH
+            </button>
+        </div>
+    </div>
+
+    <!-- MODAL ADD -->
+    <div id="add-modal" class="fixed inset-0 bg-black/95 backdrop-blur-md hidden z-50 p-6 flex items-center justify-center">
+        <div class="bg-[#0f0f0f] w-full max-w-md rounded-[2rem] border border-white/10 p-8 space-y-4 shadow-2xl">
+            <h3 class="text-lg font-bold text-white uppercase tracking-tight">Simpan Baru</h3>
+            <div class="space-y-3">
+                <input id="in-name" type="text" placeholder="Layanan (Contoh: Google)" class="w-full bg-white/5 border border-white/10 p-4 rounded-xl outline-none text-white">
+                <input id="in-user" type="text" placeholder="Username / Email" class="w-full bg-white/5 border border-white/10 p-4 rounded-xl outline-none text-white">
+                <input id="in-pass" type="text" placeholder="Password" class="w-full bg-white/5 border border-white/10 p-4 rounded-xl outline-none text-white font-mono">
+                <div onclick="document.getElementById('in-file').click()" class="w-full aspect-video rounded-xl border-2 border-dashed border-white/10 flex flex-col items-center justify-center bg-white/[0.02] cursor-pointer relative overflow-hidden">
+                    <img id="preview-img" class="hidden absolute inset-0 w-full h-full object-cover opacity-40">
+                    <div id="upload-hint" class="text-center"><i data-lucide="image" class="mx-auto mb-1 text-slate-600"></i><p class="text-[10px] text-slate-600 font-bold uppercase">Foto Lampiran</p></div>
+                </div>
+                <input id="in-file" type="file" accept="image/*" class="hidden" onchange="window.previewFile(event)">
+            </div>
+            <button onclick="window.saveData()" class="w-full py-4 text-black font-black rounded-xl uppercase text-xs" style="background: var(--accent);">SIMPAN DATA</button>
+            <button onclick="window.toggleAddModal(false)" class="w-full text-slate-500 text-xs font-bold uppercase">Batal</button>
+        </div>
+    </div>
+
+    <!-- MODAL DETAIL -->
+    <div id="detail-modal" class="fixed inset-0 bg-black/98 backdrop-blur-xl hidden z-[60] p-6 flex items-center justify-center">
+        <div id="detail-content" class="bg-[#0f0f0f] w-full max-w-md rounded-[2.5rem] border border-white/10 p-8 space-y-6 shadow-2xl relative"></div>
+    </div>
+
+    <script>
+        // Gunakan state object sederhana
+        const state = {
+            currentPin: "",
+            masterPin: "1234",
+            vaultData: JSON.parse(localStorage.getItem('myvault_v2_data') || "[]"),
+            themes: ["theme-emerald", "theme-purple", "theme-blue"],
+            themeIndex: 0,
+            tempBase64: ""
+        };
+
+        // --- EXPOSE FUNGSI KE GLOBAL (window) AGAR TERBACA DI GITHUB ---
+        
+        window.pressPin = (num) => {
+            if (state.currentPin.length < 4) {
+                state.currentPin += num;
+                window.updateDots();
+                if (state.currentPin === state.masterPin) {
+                    setTimeout(window.unlock, 200);
+                } else if (state.currentPin.length === 4) {
+                    setTimeout(() => {
+                        alert("PIN SALAH!");
+                        state.currentPin = "";
+                        window.updateDots();
+                    }, 200);
+                }
+            }
+        };
+
+        window.clearPin = () => {
+            state.currentPin = "";
+            window.updateDots();
+        };
+
+        window.updateDots = () => {
+            const dots = document.querySelectorAll('#pin-dots .pin-dot');
+            dots.forEach((dot, i) => {
+                dot.classList.toggle('filled', i < state.currentPin.length);
+            });
+        };
+
+        window.unlock = () => {
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('main-screen').classList.remove('hidden');
+            window.renderList();
+            lucide.createIcons();
+        };
+
+        window.handleBio = () => { window.unlock(); };
+        window.lockApp = () => { location.reload(); };
+
+        window.cycleTheme = () => {
+            document.body.classList.remove(state.themes[state.themeIndex]);
+            state.themeIndex = (state.themeIndex + 1) % state.themes.length;
+            document.body.classList.add(state.themes[state.themeIndex]);
+            localStorage.setItem('myvault_theme', state.themes[state.themeIndex]);
+            
+            setTimeout(() => {
+                const color = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
+                document.getElementById('bg-glow').style.background = color;
+            }, 50);
+        };
+
+        window.toggleAddModal = (show) => {
+            document.getElementById('add-modal').classList.toggle('hidden', !show);
+            if(!show) {
+                state.tempBase64 = "";
+                document.getElementById('in-name').value = "";
+                document.getElementById('preview-img').classList.add('hidden');
+                document.getElementById('upload-hint').classList.remove('hidden');
+            }
+            lucide.createIcons();
+        };
+
+        window.previewFile = (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    state.tempBase64 = reader.result;
+                    const img = document.getElementById('preview-img');
+                    img.src = reader.result;
+                    img.classList.remove('hidden');
+                    document.getElementById('upload-hint').classList.add('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        };
+
+        window.saveData = () => {
+            const name = document.getElementById('in-name').value;
+            const user = document.getElementById('in-user').value;
+            const pass = document.getElementById('in-pass').value;
+
+            if(!name || !pass) return alert("Isi Nama & Password!");
+
+            const newItem = {
+                id: Date.now(),
+                name, user, pass,
+                file: state.tempBase64,
+                date: new Date().toLocaleDateString('id-ID')
+            };
+
+            state.vaultData.unshift(newItem);
+            localStorage.setItem('myvault_v2_data', JSON.stringify(state.vaultData));
+            window.toggleAddModal(false);
+            window.renderList();
+        };
+
+        window.deleteItem = (id) => {
+            if(confirm("Hapus data ini?")) {
+                state.vaultData = state.vaultData.filter(i => i.id !== id);
+                localStorage.setItem('myvault_v2_data', JSON.stringify(state.vaultData));
+                document.getElementById('detail-modal').classList.add('hidden');
+                window.renderList();
+            }
+        };
+
+        window.openDetail = (id) => {
+            const item = state.vaultData.find(i => i.id === id);
+            if(!item) return;
+            const color = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
+            const detail = document.getElementById('detail-content');
+            detail.innerHTML = `
+                <button onclick="document.getElementById('detail-modal').classList.add('hidden')" class="absolute top-6 right-6 text-slate-500"><i data-lucide="x"></i></button>
+                <div class="flex items-center gap-4 mb-6">
+                    <div class="w-12 h-12 rounded-xl flex items-center justify-center text-black font-bold text-xl" style="background:${color}">${item.name[0].toUpperCase()}</div>
+                    <h2 class="text-2xl font-black text-white">${item.name}</h2>
+                </div>
+                <div class="space-y-3">
+                    <div class="p-4 bg-white/5 rounded-xl border border-white/5"><p class="text-[10px] text-slate-600 uppercase font-bold">User</p><p class="text-white">${item.user || '-'}</p></div>
+                    <div class="p-4 bg-white/5 rounded-xl border border-white/5"><p class="text-[10px] text-slate-600 uppercase font-bold">Password</p><p class="text-xl font-mono text-emerald-400 tracking-widest">${item.pass}</p></div>
+                    ${item.file ? `<img src="${item.file}" class="w-full rounded-xl border border-white/10 shadow-lg mt-2">` : ''}
+                </div>
+                <button onclick="window.deleteItem(${item.id})" class="w-full py-4 bg-red-500/10 text-red-500 rounded-xl font-bold uppercase text-[10px] tracking-widest mt-6">Hapus Permanen</button>
+            `;
+            document.getElementById('detail-modal').classList.remove('hidden');
+            lucide.createIcons();
+        };
+
+        window.renderList = () => {
+            const list = document.getElementById('vault-list');
+            const search = document.getElementById('search-bar').value.toLowerCase();
+            const color = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
+            const filtered = state.vaultData.filter(i => i.name.toLowerCase().includes(search));
+
+            document.getElementById('vault-count').textContent = `${filtered.length} Items`;
+            document.getElementById('empty-state').classList.toggle('hidden', filtered.length > 0);
+
+            list.innerHTML = filtered.map(item => `
+                <div onclick="window.openDetail(${item.id})" class="glass p-5 rounded-2xl flex flex-col gap-4 border border-white/5 hover:border-white/20 transition-all cursor-pointer group">
+                    <div class="flex justify-between items-start">
+                        <div class="w-10 h-10 rounded-lg flex items-center justify-center text-black font-bold" style="background:${color}">${item.name[0].toUpperCase()}</div>
+                        <i data-lucide="chevron-right" class="w-4 h-4 text-slate-700"></i>
+                    </div>
+                    <h4 class="font-bold text-white">${item.name}</h4>
+                    <div class="bg-black/40 rounded-lg p-2 font-mono text-emerald-500 text-[10px] tracking-widest text-center border border-white/5">••••••••</div>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        };
+
+        // --- INISIALISASI ---
+        window.addEventListener('load', () => {
+            const saved = localStorage.getItem('myvault_theme');
+            if(saved) {
+                document.body.classList.remove('theme-emerald');
+                document.body.classList.add(saved);
+                state.themeIndex = state.themes.indexOf(saved);
+            }
+            lucide.createIcons();
+            window.updateDots();
+        });
+    </script>
+</body>
+</html>
