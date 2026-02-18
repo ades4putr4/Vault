@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Premium Storage App</title>
+
+<style>
+body {
+    margin: 0;
+    font-family: 'Segoe UI', sans-serif;
+    background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+    color: white;
+}
+
+.container {
+    max-width: 900px;
+    margin: auto;
+    padding: 20px;
+}
+
+.card {
+    background: rgba(255,255,255,0.08);
+    backdrop-filter: blur(15px);
+    padding: 20px;
+    border-radius: 15px;
+    margin-bottom: 20px;
+}
+
+input, textarea {
+    width: 100%;
+    padding: 10px;
+    margin: 8px 0;
+    border-radius: 8px;
+    border: none;
+}
+
+button {
+    padding: 10px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-weight: bold;
+    background: linear-gradient(to right, #00c6ff, #0072ff);
+    color: white;
+}
+
+button.danger {
+    background: linear-gradient(to right, #ff416c, #ff4b2b);
+}
+
+.note {
+    background: rgba(255,255,255,0.1);
+    padding: 15px;
+    border-radius: 10px;
+    margin-top: 10px;
+}
+
+.note img {
+    width: 120px;
+    margin: 5px;
+    border-radius: 8px;
+}
+
+.hidden {
+    display: none;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+    <div id="authCard" class="card">
+        <h2 id="authTitle">Login</h2>
+        <input type="text" id="username" placeholder="Username">
+        <input type="password" id="password" placeholder="Password">
+        <button onclick="handleAuth()">Login</button>
+        <p onclick="toggleAuth()" style="cursor:pointer;color:#00c6ff">
+            Belum punya akun? Register
+        </p>
+    </div>
+
+    <div id="dashboard" class="hidden">
+
+        <div class="header">
+            <h2>Dashboard</h2>
+            <button class="danger" onclick="logout()">Logout</button>
+        </div>
+
+        <div class="card">
+            <h3>Statistik</h3>
+            <p>Total Note: <b id="noteCount">0</b></p>
+        </div>
+
+        <div class="card">
+            <h3>Buat Note</h3>
+            <input type="text" id="noteTitle" placeholder="Judul">
+            <textarea id="noteContent" placeholder="Isi note"></textarea>
+            <input type="file" id="noteImages" multiple>
+            <button onclick="createNote()">Simpan Note</button>
+        </div>
+
+        <div class="card">
+            <h3>Cari Note</h3>
+            <input type="text" id="searchInput" onkeyup="renderNotes()" placeholder="Cari judul...">
+        </div>
+
+        <div id="noteList"></div>
+
+    </div>
+</div>
+
+<script>
+
+let isLogin = true;
+let token = localStorage.getItem("token");
+
+if (token) showDashboard();
+
+function toggleAuth() {
+    isLogin = !isLogin;
+    document.getElementById("authTitle").innerText = isLogin ? "Login" : "Register";
+    document.querySelector("#authCard button").innerText = isLogin ? "Login" : "Register";
+}
+
+async function handleAuth() {
+    const username = username.value;
+    const password = password.value;
+
+    const endpoint = isLogin ? "/login" : "/register";
+
+    const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password })
+    });
+
+    const data = await res.json();
+
+    if (isLogin) {
+        if (data.token) {
+            localStorage.setItem("token", data.token);
+            token = data.token;
+            showDashboard();
+        } else {
+            alert("Login gagal");
+        }
+    } else {
+        alert("Register berhasil, silakan login");
+        toggleAuth();
+    }
+}
+
+function logout() {
+    localStorage.removeItem("token");
+    location.reload();
+}
+
+function showDashboard() {
+    document.getElementById("authCard").classList.add("hidden");
+    document.getElementById("dashboard").classList.remove("hidden");
+    loadNotes();
+}
+
+async function createNote() {
+    const title = noteTitle.value;
+    const content = noteContent.value;
+    const images = noteImages.files;
+
+    const formData = new FormData();
+    formData.append("title", title);
+    formData.append("content", content);
+
+    for (let i = 0; i < images.length; i++) {
+        formData.append("images", images[i]);
+    }
+
+    await fetch("/notes", {
+        method: "POST",
+        headers: { Authorization: token },
+        body: formData
+    });
+
+    noteTitle.value = "";
+    noteContent.value = "";
+    noteImages.value = "";
+
+    loadNotes();
+}
+
+async function loadNotes() {
+    const res = await fetch("/notes", {
+        headers: { Authorization: token }
+    });
+
+    const notes = await res.json();
+    window.allNotes = notes;
+    renderNotes();
+}
+
+function renderNotes() {
+    const search = searchInput.value.toLowerCase();
+    noteList.innerHTML = "";
+
+    const filtered = window.allNotes.filter(n =>
+        n.title.toLowerCase().includes(search)
+    );
+
+    document.getElementById("noteCount").innerText = filtered.length;
+
+    filtered.forEach(note => {
+        const div = document.createElement("div");
+        div.className = "note";
+
+        let imagesHTML = "";
+        if (note.images) {
+            note.images.split(",").forEach(img => {
+                imagesHTML += `<img src="/uploads/${img}">`;
+            });
+        }
+
+        div.innerHTML = `
+            <h4>${note.title}</h4>
+            <p>${note.content}</p>
+            <small>${new Date(note.created_at).toLocaleString()}</small>
+            <div>${imagesHTML}</div>
+        `;
+
+        noteList.appendChild(div);
+    });
+}
+
+</script>
+
+</body>
+</html>
