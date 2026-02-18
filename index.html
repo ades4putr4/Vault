@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MyVault - Secure HTML Storage</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com/"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap');
+        
+        body { font-family: 'Inter', sans-serif; background-color: #050505; color: #e2e8f0; }
+        
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        .blob {
+            position: absolute;
+            width: 500px;
+            height: 500px;
+            background: rgba(16, 185, 129, 0.15);
+            filter: blur(120px);
+            border-radius: 50%;
+            z-index: -1;
+            animation: pulse 10s infinite alternate;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1) translate(0, 0); }
+            100% { transform: scale(1.2) translate(20px, 20px); }
+        }
+
+        .pin-dot {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            border: 2px solid #1e293b;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .pin-dot.filled {
+            background-color: #10b981;
+            border-color: #10b981;
+            transform: scale(1.2);
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.5);
+        }
+
+        .modal-enter { animation: modalIn 0.3s ease-out forwards; }
+        @keyframes modalIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        button:active { transform: scale(0.95); }
+    </style>
+</head>
+<body class="overflow-x-hidden">
+
+    <div id="blob-1" class="blob top-[-10%] left-[-10%]"></div>
+    <div id="blob-2" class="blob bottom-[-10%] right-[-10%]" style="background: rgba(79, 70, 229, 0.1);"></div>
+
+    <!-- SCREENS CONTAINER -->
+    <div id="app">
+        
+        <!-- 1. LOGIN SCREEN -->
+        <div id="login-screen" class="min-h-screen flex flex-col items-center justify-center p-6 text-center">
+            <div class="mb-10 inline-flex p-6 rounded-[2.5rem] bg-emerald-500/10 border border-emerald-500/20 shadow-2xl">
+                <i data-lucide="shield" class="text-emerald-500 w-14 h-14"></i>
+            </div>
+            <h1 class="text-4xl font-black tracking-tight mb-2 bg-gradient-to-b from-white to-slate-500 bg-clip-text text-transparent">MyVault</h1>
+            <p class="text-slate-500 mb-10 font-medium">Masukkan PIN untuk membuka berkas</p>
+
+            <div id="pin-dots" class="flex justify-center gap-4 mb-12">
+                <div class="pin-dot"></div>
+                <div class="pin-dot"></div>
+                <div class="pin-dot"></div>
+                <div class="pin-dot"></div>
+            </div>
+
+            <div id="pin-pad" class="grid grid-cols-3 gap-4 w-full max-w-sm">
+                <!-- Pad buttons added via JS -->
+            </div>
+            
+            <button id="bio-btn" class="mt-8 flex items-center gap-2 text-slate-500 hover:text-emerald-400 transition-colors">
+                <i data-lucide="fingerprint" class="w-5 h-5"></i>
+                <span class="text-xs font-bold uppercase tracking-widest">Login Biometrik</span>
+            </button>
+        </div>
+
+        <!-- 2. MAIN DASHBOARD -->
+        <div id="main-screen" class="hidden min-h-screen flex flex-col">
+            <header class="sticky top-0 z-30 bg-[#050505]/80 backdrop-blur-xl border-b border-white/5 px-6 py-4">
+                <div class="max-w-6xl mx-auto flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2.5 rounded-2xl bg-emerald-500 text-black shadow-lg">
+                            <i data-lucide="shield" class="w-5 h-5"></i>
+                        </div>
+                        <h1 class="text-xl font-black text-white tracking-tight">MyVault</h1>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button id="open-settings-btn" class="p-3 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all text-slate-400"><i data-lucide="settings" class="w-5 h-5"></i></button>
+                        <button id="logout-btn" class="p-3 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-all"><i data-lucide="log-out" class="w-5 h-5"></i></button>
+                    </div>
+                </div>
+            </header>
+
+            <main class="max-w-6xl mx-auto w-full px-6 pt-10">
+                <!-- Search -->
+                <div class="flex flex-col md:flex-row gap-5 mb-12">
+                    <div class="relative flex-1">
+                        <i data-lucide="search" class="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500 w-5 h-5"></i>
+                        <input id="search-input" type="text" placeholder="Cari rahasia..." class="w-full bg-white/5 border border-white/10 rounded-[1.5rem] py-4.5 pl-14 pr-6 outline-none focus:border-emerald-500/50 transition-all text-sm font-medium">
+                    </div>
+                    <div id="categories-list" class="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+                        <!-- Categories added via JS -->
+                    </div>
+                </div>
+
+                <!-- Grid -->
+                <div id="vault-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Cards added via JS -->
+                </div>
+
+                <!-- Empty State -->
+                <div id="empty-state" class="hidden py-32 text-center opacity-40">
+                    <i data-lucide="search" class="w-12 h-12 mx-auto mb-4"></i>
+                    <p class="text-sm font-black uppercase tracking-widest">Tidak ada data ditemukan</p>
+                </div>
+            </main>
+
+            <!-- FAB -->
+            <button id="add-btn" class="fixed bottom-10 right-10 px-8 py-5 bg-emerald-500 text-black font-black rounded-[2rem] shadow-2xl hover:scale-105 active:scale-95 transition-all flex items-center gap-3 z-40 text-lg">
+                <i data-lucide="plus" class="w-7 h-7"></i>
+                TAMBAH BARU
+            </button>
+        </div>
+    </div>
+
+    <!-- MODALS -->
+    <div id="modal-overlay" class="fixed inset-0 z-[60] hidden flex items-center justify-center p-4 bg-black/90 backdrop-blur-xl">
+        <!-- Modals container -->
+        <div id="add-modal" class="hidden bg-[#0f0f0f] w-full max-w-lg rounded-[3rem] border border-white/10 shadow-2xl overflow-hidden flex flex-col max-h-[90vh] modal-enter">
+            <div class="p-8 border-b border-white/5 flex justify-between items-center">
+                <h2 class="text-2xl font-black text-white">ENTRI BARU</h2>
+                <button onclick="closeCurrentModal()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
+            </div>
+            <div class="flex p-2 bg-white/5 mx-8 mt-6 rounded-2xl border border-white/5">
+                <button onclick="switchFormType('password')" id="tab-pass" class="flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest bg-emerald-500 text-black transition-all">Password</button>
+                <button onclick="switchFormType('note')" id="tab-note" class="flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest text-slate-500 transition-all">Catatan</button>
+            </div>
+            <form id="vault-form" class="p-8 overflow-y-auto space-y-6 no-scrollbar">
+                <div class="space-y-2">
+                    <label class="text-[10px] font-black text-slate-600 uppercase tracking-widest ml-1">Nama Layanan</label>
+                    <div class="flex gap-2">
+                        <input id="form-name" required class="flex-1 bg-white/5 border border-white/10 rounded-2xl py-4 px-6 outline-none focus:border-emerald-500 text-white font-bold" placeholder="Misal: Netflix">
+                        <button type="button" onclick="handleSmartFill()" class="p-4 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 rounded-2xl hover:bg-indigo-500/20 transition-all"><i data-lucide="sparkles" class="w-6 h-6"></i></button>
+                    </div>
+                </div>
+                <div id="password-fields" class="space-y-6">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="space-y-2">
+                            <label class="text-[10px] font-black text-slate-600 uppercase tracking-widest">Kategori</label>
+                            <select id="form-category" class="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 outline-none text-white font-bold appearance-none">
+                                <option>Personal</option><option>Keuangan</option><option>Sosial Media</option><option>Pekerjaan</option><option>Hiburan</option><option>Belanja</option>
+                            </select>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-[10px] font-black text-slate-600 uppercase tracking-widest">Username</label>
+                            <input id="form-username" class="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 outline-none focus:border-emerald-500 text-white font-bold">
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-center"><label class="text-[10px] font-black text-slate-600 uppercase tracking-widest">Password</label><button type="button" onclick="handleAiPassword()" class="text-[10px] font-black text-emerald-500 uppercase tracking-tighter">AI Generate</button></div>
+                        <input id="form-password" class="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 outline-none focus:border-emerald-500 text-white font-mono tracking-widest">
+                    </div>
+                </div>
+                <div id="note-fields" class="hidden space-y-2">
+                    <label class="text-[10px] font-black text-slate-600 uppercase tracking-widest">Isi Catatan</label>
+                    <textarea id="form-notes" rows="4" class="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 outline-none focus:border-emerald-500 text-white resize-none"></textarea>
+                </div>
+                <div class="space-y-2">
+                    <label class="text-[10px] font-black text-slate-600 uppercase tracking-widest">Gambar</label>
+                    <div onclick="document.getElementById('form-file').click()" class="w-full aspect-video rounded-[2rem] border-2 border-dashed border-white/10 hover:border-emerald-500/40 flex flex-col items-center justify-center transition-all bg-white/2 relative overflow-hidden">
+                        <div id="upload-placeholder" class="text-center">
+                            <div class="p-5 bg-emerald-500/10 rounded-3xl text-emerald-500 inline-block mb-2"><i data-lucide="upload"></i></div>
+                            <p class="text-slate-600 text-[10px] font-black uppercase">Klik Unggah</p>
+                        </div>
+                        <img id="form-image-preview" class="hidden absolute inset-0 w-full h-full object-cover">
+                    </div>
+                    <input id="form-file" type="file" accept="image/*" class="hidden" onchange="previewFile(event)">
+                </div>
+                <button type="submit" class="w-full py-5 bg-emerald-500 text-black font-black rounded-3xl hover:bg-emerald-400 transition-all uppercase tracking-widest">Simpan Data</button>
+            </form>
+        </div>
+
+        <div id="detail-modal" class="hidden bg-[#0f0f0f] w-full max-w-2xl rounded-[3.5rem] border border-white/10 shadow-2xl overflow-hidden flex flex-col max-h-[92vh] modal-enter">
+            <!-- Populated via JS -->
+        </div>
+
+        <div id="settings-modal" class="hidden bg-[#0f0f0f] w-full max-w-sm rounded-[3rem] border border-white/10 p-10 space-y-8 modal-enter">
+            <div class="flex justify-between items-center"><h2 class="text-2xl font-black text-white">PIN</h2><button onclick="closeCurrentModal()"><i data-lucide="x"></i></button></div>
+            <form id="pin-change-form" class="space-y-4">
+                <input id="pin-old" required type="password" maxlength="4" placeholder="PIN Lama" class="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 outline-none text-center text-2xl tracking-[1em]">
+                <input id="pin-new" required type="password" maxlength="4" placeholder="PIN Baru" class="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 outline-none text-center text-2xl tracking-[1em]">
+                <input id="pin-confirm" required type="password" maxlength="4" placeholder="Konfirmasi" class="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 outline-none text-center text-2xl tracking-[1em]">
+                <button type="submit" class="w-full py-5 bg-emerald-500 text-black font-black rounded-2xl">Perbarui PIN</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="toast-container"></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, deleteDoc, updateDoc, doc, onSnapshot, query, serverTimestamp, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- FIREBASE CONFIG CHECK ---
+        let firebaseConfig;
+        try {
+            // Coba ambil dari environment sandbox (untuk preview di sini)
+            firebaseConfig = JSON.parse(__firebase_config);
+        } catch (e) {
+            // Jika di GitHub, gunakan config manual ini. 
+            // ISI DENGAN DATA DARI FIREBASE CONSOLE-MU!
+            firebaseConfig = {
+                apiKey: "",
+                authDomain: "",
+                projectId: "",
+                storageBucket: "",
+                messagingSenderId: "",
+                appId: ""
+            };
+        }
+
+        // --- GLOBAL STATE ---
+        let db, auth;
+        let user = null;
+        let masterPin = '1234';
+        let pinInput = '';
+        let items = [];
+        let search = '';
+        let activeCategory = 'Semua';
+        let currentFormType = 'password';
+        let currentImageData = '';
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'my-vault-html';
+
+        // --- UI HELPERS ---
+        window.showToast = (message, type = 'success') => {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-3 px-6 py-4 rounded-3xl shadow-2xl backdrop-blur-xl border animate-in slide-in-from-bottom duration-500 ${
+                type === 'error' ? 'bg-red-500/90 border-red-400 text-white' : 'bg-emerald-500/90 border-emerald-400 text-white'
+            }`;
+            toast.innerHTML = `<i data-lucide="${type === 'error' ? 'alert-circle' : 'check'}" class="w-5 h-5"></i><span class="font-bold text-sm">${message}</span>`;
+            container.appendChild(toast);
+            lucide.createIcons();
+            setTimeout(() => toast.remove(), 3000);
+        };
+
+        const updatePinDots = () => {
+            document.querySelectorAll('.pin-dot').forEach((dot, i) => {
+                if(i < pinInput.length) dot.classList.add('filled');
+                else dot.classList.remove('filled');
+            });
+        };
+
+        window.closeCurrentModal = () => {
+            document.getElementById('modal-overlay').classList.add('hidden');
+            ['add-modal', 'detail-modal', 'settings-modal'].forEach(id => document.getElementById(id).classList.add('hidden'));
+        };
+
+        // --- CORE LOGIC ---
+        const initApp = async () => {
+            if (!firebaseConfig.apiKey) {
+                console.error("Firebase Config belum diisi!");
+                document.body.innerHTML = "<div class='p-10 text-center text-red-500 font-bold'>Error: Konfigurasi Firebase belum diisi. Silakan edit file index.html dan masukkan Firebase API Key Anda.</div>";
+                return;
+            }
+
+            const app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+
+            // Render Pin Pad
+            const pinPad = document.getElementById('pin-pad');
+            [1, 2, 3, 4, 5, 6, 7, 8, 9, 'F', 0, 'X'].forEach(n => {
+                const btn = document.createElement('button');
+                btn.className = "h-20 rounded-3xl bg-white/[0.03] border border-white/5 text-3xl font-black hover:bg-white/10 transition-all";
+                if(n === 'F') btn.innerHTML = `<i data-lucide="fingerprint" class="w-7 h-7 mx-auto"></i>`;
+                else if(n === 'X') btn.innerHTML = `<i data-lucide="delete" class="w-7 h-7 mx-auto"></i>`;
+                else btn.textContent = n;
+
+                btn.onclick = () => {
+                    if(n === 'F') handleBiometric();
+                    else if(n === 'X') { pinInput = ''; updatePinDots(); }
+                    else {
+                        if(pinInput.length < 4) {
+                            pinInput += n;
+                            updatePinDots();
+                            if(pinInput === masterPin) {
+                                document.getElementById('login-screen').classList.add('hidden');
+                                document.getElementById('main-screen').classList.remove('hidden');
+                                showToast("Akses Diterima");
+                            } else if(pinInput.length === 4) {
+                                setTimeout(() => { pinInput = ''; updatePinDots(); showToast("PIN Salah", "error"); }, 400);
+                            }
+                        }
+                    }
+                };
+                pinPad.appendChild(btn);
+            });
+
+            // Auth State
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                await signInWithCustomToken(auth, __initial_auth_token);
+            } else {
+                await signInAnonymously(auth);
+            }
+
+            onAuthStateChanged(auth, (u) => {
+                user = u;
+                if(u) {
+                    const pinRef = doc(db, 'artifacts', appId, 'users', u.uid, 'settings', 'security');
+                    onSnapshot(pinRef, (snap) => {
+                        if(snap.exists()) masterPin = snap.data().masterPin || '1234';
+                        else setDoc(pinRef, { masterPin: '1234' });
+                    });
+
+                    const colRef = collection(db, 'artifacts', appId, 'users', u.uid, 'vault_items');
+                    onSnapshot(colRef, (snap) => {
+                        items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                        renderItems();
+                    });
+                }
+            });
+
+            lucide.createIcons();
+            renderCategories();
+        };
+
+        const renderItems = () => {
+            const grid = document.getElementById('vault-grid');
+            const q = search.toLowerCase();
+            const filtered = items.filter(i => {
+                const matchSearch = i.name?.toLowerCase().includes(q) || i.username?.toLowerCase().includes(q);
+                const matchCat = activeCat
