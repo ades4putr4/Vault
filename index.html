@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ultimate Storage App</title>
+
+<style>
+body{
+margin:0;
+font-family:Segoe UI;
+background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);
+color:white;
+}
+
+.container{
+max-width:1000px;
+margin:auto;
+padding:20px;
+}
+
+.card{
+background:rgba(255,255,255,0.08);
+backdrop-filter:blur(15px);
+padding:20px;
+border-radius:15px;
+margin-bottom:20px;
+}
+
+input,textarea{
+width:100%;
+padding:10px;
+margin:8px 0;
+border:none;
+border-radius:8px;
+}
+
+button{
+padding:10px;
+border:none;
+border-radius:8px;
+cursor:pointer;
+background:linear-gradient(to right,#00c6ff,#0072ff);
+color:white;
+font-weight:bold;
+}
+
+button.danger{
+background:linear-gradient(to right,#ff416c,#ff4b2b);
+}
+
+.hidden{display:none}
+
+.note{
+background:rgba(255,255,255,0.1);
+padding:15px;
+border-radius:10px;
+margin-top:10px;
+}
+
+.note img{
+width:120px;
+margin:5px;
+border-radius:8px;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+<div id="datetime"></div>
+
+<div id="authCard" class="card">
+<h2 id="authTitle">Login</h2>
+<input type="text" id="username" placeholder="Username">
+<input type="password" id="password" placeholder="Password">
+<button onclick="handleAuth()">Login</button>
+<p onclick="toggleAuth()" style="cursor:pointer;color:#00c6ff">
+Belum punya akun? Register
+</p>
+</div>
+
+<div id="dashboard" class="hidden">
+
+<div class="card">
+<h3>Dashboard</h3>
+<p>User: <b id="currentUser"></b></p>
+<p>Total Note: <b id="noteCount">0</b></p>
+<button class="danger" onclick="logout()">Logout</button>
+</div>
+
+<div class="card">
+<h3>Buat / Edit Note</h3>
+<input type="hidden" id="editIndex">
+<input type="text" id="noteTitle" placeholder="Judul">
+<textarea id="noteContent" placeholder="Isi note"></textarea>
+<input type="file" id="noteImages" multiple>
+<button onclick="saveNote()">Simpan</button>
+</div>
+
+<div class="card">
+<input type="text" id="searchInput" onkeyup="renderNotes()" placeholder="Cari note...">
+</div>
+
+<div id="noteList"></div>
+
+</div>
+
+</div>
+
+<script>
+let isLogin=true;
+
+// realtime clock
+setInterval(()=>{
+document.getElementById("datetime").innerText=
+new Date().toLocaleString("id-ID");
+},1000);
+
+// hash simple
+async function hash(text){
+const msgUint8=new TextEncoder().encode(text);
+const hashBuffer=await crypto.subtle.digest('SHA-256',msgUint8);
+const hashArray=Array.from(new Uint8Array(hashBuffer));
+return hashArray.map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+function toggleAuth(){
+isLogin=!isLogin;
+authTitle.innerText=isLogin?"Login":"Register";
+authCard.querySelector("button").innerText=isLogin?"Login":"Register";
+}
+
+async function handleAuth(){
+let users=JSON.parse(localStorage.getItem("users"))||[];
+const u=username.value;
+const p=await hash(password.value);
+
+if(isLogin){
+const user=users.find(x=>x.username===u&&x.password===p);
+if(!user)return alert("Login gagal");
+localStorage.setItem("session",u);
+showDashboard();
+}else{
+if(users.find(x=>x.username===u))return alert("Username sudah ada");
+users.push({username:u,password:p,role:"user"});
+localStorage.setItem("users",JSON.stringify(users));
+alert("Register berhasil");
+toggleAuth();
+}
+}
+
+function showDashboard(){
+authCard.classList.add("hidden");
+dashboard.classList.remove("hidden");
+currentUser.innerText=localStorage.getItem("session");
+renderNotes();
+}
+
+function logout(){
+localStorage.removeItem("session");
+location.reload();
+}
+
+function saveNote(){
+const user=localStorage.getItem("session");
+let notes=JSON.parse(localStorage.getItem("notes_"+user))||[];
+const index=editIndex.value;
+const files=noteImages.files;
+
+let images=[];
+if(files.length>0){
+for(let f of files){
+let reader=new FileReader();
+reader.onload=e=>{
+images.push(e.target.result);
+};
+reader.readAsDataURL(f);
+}
+}
+
+setTimeout(()=>{
+const data={
+title:noteTitle.value,
+content:noteContent.value,
+images:images,
+date:new Date().toLocaleString("id-ID")
+};
+
+if(index===""){
+notes.push(data);
+}else{
+notes[index]=data;
+editIndex.value="";
+}
+
+localStorage.setItem("notes_"+user,JSON.stringify(notes));
+noteTitle.value="";
+noteContent.value="";
+noteImages.value="";
+renderNotes();
+},500);
+}
+
+function renderNotes(){
+const user=localStorage.getItem("session");
+let notes=JSON.parse(localStorage.getItem("notes_"+user))||[];
+const search=searchInput.value.toLowerCase();
+noteList.innerHTML="";
+
+const filtered=notes.filter(n=>n.title.toLowerCase().includes(search));
+noteCount.innerText=filtered.length;
+
+filtered.forEach((n,i)=>{
+let imgHTML="";
+if(n.images){
+n.images.forEach(img=>{
+imgHTML+=`<img src="${img}">`;
+});
+}
+noteList.innerHTML+=`
+<div class="note">
+<h4>${n.title}</h4>
+<p>${n.content}</p>
+<small>${n.date}</small>
+<div>${imgHTML}</div>
+<button onclick="editNote(${i})">Edit</button>
+<button class="danger" onclick="deleteNote(${i})">Hapus</button>
+</div>
+`;
+});
+}
+
+function editNote(i){
+const user=localStorage.getItem("session");
+let notes=JSON.parse(localStorage.getItem("notes_"+user))||[];
+noteTitle.value=notes[i].title;
+noteContent.value=notes[i].content;
+editIndex.value=i;
+}
+
+function deleteNote(i){
+if(!confirm("Hapus note?"))return;
+const user=localStorage.getItem("session");
+let notes=JSON.parse(localStorage.getItem("notes_"+user))||[];
+notes.splice(i,1);
+localStorage.setItem("notes_"+user,JSON.stringify(notes));
+renderNotes();
+}
+
+if(localStorage.getItem("session")){
+showDashboard();
+}
+</script>
+
+</body>
+</html>
