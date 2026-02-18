@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CyberVault - Brankas Pribadi Aman</title>
+    
+    <!-- Load CSS First -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        @keyframes pulse-slow {
+            0%, 100% { opacity: 0.3; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(1.1); }
+        }
+        .animate-pulse-slow { animation: pulse-slow 8s infinite ease-in-out; }
+        .glass {
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        body {
+            background-color: #020617;
+            margin: 0;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: #e2e8f0;
+        }
+        /* Loading Screen Style */
+        #app-loader {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #020617;
+            z-index: 9999;
+            transition: opacity 0.5s ease;
+        }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(59, 130, 246, 0.1);
+            border-top: 3px solid #3b82f6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <!-- Loading Screen (Will be removed by React) -->
+    <div id="app-loader">
+        <div class="spinner"></div>
+        <p style="margin-top: 15px; font-size: 12px; color: #64748b; letter-spacing: 2px;">INITIALIZING CYBERVAULT...</p>
+    </div>
+
+    <div id="root"></div>
+
+    <!-- Load Scripts in order -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        const Icon = ({ name, size = 20, className = "" }) => {
+            useEffect(() => {
+                if (window.lucide) window.lucide.createIcons();
+            }, [name]);
+            return <i data-lucide={name} className={className} style={{ width: size, height: size }}></i>;
+        };
+
+        const BackgroundGlow = () => (
+            <div className="fixed inset-0 -z-10 bg-slate-950 overflow-hidden">
+                <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-blue-600/20 blur-[120px] animate-pulse-slow"></div>
+                <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-purple-600/20 blur-[120px] animate-pulse-slow" style={{ animationDelay: '2s' }}></div>
+                <div className="absolute top-[30%] left-[40%] w-[30%] h-[30%] rounded-full bg-cyan-500/10 blur-[100px] animate-pulse-slow" style={{ animationDelay: '4s' }}></div>
+                <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]"></div>
+            </div>
+        );
+
+        const Modal = ({ isOpen, onClose, title, children }) => {
+            if (!isOpen) return null;
+            return (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+                    <div className="w-full max-w-md glass rounded-3xl p-6 shadow-2xl animate-in zoom-in duration-300">
+                        <div className="flex justify-between items-center mb-6">
+                            <h3 className="text-xl font-bold text-white">{title}</h3>
+                            <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors text-slate-400">
+                                <Icon name="x" size={20} />
+                            </button>
+                        </div>
+                        {children}
+                    </div>
+                </div>
+            );
+        };
+
+        const App = () => {
+            const [isLocked, setIsLocked] = useState(true);
+            const [masterPassword, setMasterPassword] = useState('');
+            const [activeTab, setActiveTab] = useState('passwords');
+            const [searchTerm, setSearchTerm] = useState('');
+            const [isPassModalOpen, setIsPassModalOpen] = useState(false);
+            const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
+            const [newPass, setNewPass] = useState({ site: '', user: '', pass: '' });
+            const [newNote, setNewNote] = useState({ title: '', content: '' });
+
+            // Data Persistence
+            const [passwords, setPasswords] = useState(() => JSON.parse(localStorage.getItem('cv_passwords') || '[]'));
+            const [images, setImages] = useState(() => JSON.parse(localStorage.getItem('cv_images') || '[]'));
+            const [notes, setNotes] = useState(() => JSON.parse(localStorage.getItem('cv_notes') || '[]'));
+
+            useEffect(() => {
+                // Hapus loader setelah React siap
+                const loader = document.getElementById('app-loader');
+                if (loader) loader.style.opacity = '0';
+                setTimeout(() => loader?.remove(), 500);
+            }, []);
+
+            useEffect(() => { localStorage.setItem('cv_passwords', JSON.stringify(passwords)); }, [passwords]);
+            useEffect(() => { localStorage.setItem('cv_images', JSON.stringify(images)); }, [images]);
+            useEffect(() => { localStorage.setItem('cv_notes', JSON.stringify(notes)); }, [notes]);
+
+            const handleLogin = (e) => {
+                e.preventDefault();
+                if (masterPassword === '1234') {
+                    setIsLocked(false);
+                } else {
+                    const msg = document.getElementById('error-msg');
+                    if (msg) {
+                        msg.innerText = "PASSWORD SALAH! (MOCK: 1234)";
+                        setTimeout(() => msg.innerText = "", 3000);
+                    }
+                }
+            };
+
+            const copyToClipboard = (text) => {
+                const el = document.createElement('textarea');
+                el.value = text;
+                document.body.appendChild(el);
+                el.select();
+                document.execCommand('copy');
+                document.body.removeChild(el);
+                const fb = document.getElementById('copy-feedback');
+                fb?.classList.remove('opacity-0');
+                setTimeout(() => fb?.classList.add('opacity-0'), 2000);
+            };
+
+            const handleImageUpload = (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        setImages([...images, { id: Date.now(), url: reader.result }]);
+                    };
+                    reader.readAsDataURL(file);
+                }
+            };
+
+            if (isLocked) {
+                return (
+                    <div className="min-h-screen flex items-center justify-center p-4">
+                        <BackgroundGlow />
+                        <div className="w-full max-w-md p-10 rounded-[2.5rem] glass shadow-2xl text-center border border-blue-500/20">
+                            <div className="flex flex-col items-center mb-8">
+                                <div className="p-5 rounded-full bg-blue-500/10 border border-blue-500/40 mb-6 shadow-[0_0_40px_rgba(59,130,246,0.15)] animate-pulse">
+                                    <Icon name="shield-check" size={48} className="text-blue-400" />
+                                </div>
+                                <h1 className="text-4xl font-black text-white tracking-tighter mb-2">CYBERVAULT</h1>
+                                <p className="text-blue-400/60 text-[10px] tracking-[0.2em] uppercase font-bold">Secure Access Protocol</p>
+                            </div>
+                            <form onSubmit={handleLogin} className="space-y-4">
+                                <input 
+                                    type="password" 
+                                    placeholder="MASTER PASSWORD"
+                                    className="w-full bg-slate-900/80 border border-white/10 rounded-2xl px-6 py-4 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-center tracking-[0.5em] font-bold"
+                                    value={masterPassword}
+                                    onChange={(e) => setMasterPassword(e.target.value)}
+                                    autoFocus
+                                />
+                                <button className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-2xl transition-all shadow-lg shadow-blue-900/40 flex items-center justify-center gap-3 active:scale-95">
+                                    <Icon name="unlock" size={18} /> OPEN VAULT
+                                </button>
+                                <p id="error-msg" className="text-red-400 text-[10px] font-bold h-4 uppercase tracking-wider"></p>
+                            </form>
+                            <div className="mt-10 opacity-20 text-[9px] text-slate-500 italic">HINT: 1234</div>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="min-h-screen p-4 md:p-10">
+                    <BackgroundGlow />
+                    <header className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 mb-12">
+                        <div className="flex items-center gap-4">
+                            <div className="p-3 bg-blue-500/20 rounded-2xl border border-blue-500/30">
+                                <Icon name="shield" size={24} className="text-blue-400" />
+                            </div>
+                            <h2 className="text-2xl font-black text-white tracking-tight">VAULT_DASHBOARD</h2>
+                        </div>
+                        <div className="flex items-center gap-4 w-full md:w-auto">
+                            <div className="relative flex-1 md:w-80">
+                                <Icon name="search" size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
+                                <input 
+                                    type="text" 
+                                    placeholder="Search entries..."
+                                    className="w-full bg-slate-900/60 border border-white/5 rounded-2xl pl-12 pr-6 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                />
+                            </div>
+                            <button onClick={() => setIsLocked(true)} className="p-3 glass rounded-2xl text-slate-500 hover:text-red-400 transition-colors">
+                                <Icon name="log-out" size={20} />
+                            </button>
+                        </div>
+                    </header>
+
+                    <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
+                        {/* Sidebar */}
+                        <aside className="lg:col-span-3 space-y-2">
+                            {[
+                                { id: 'passwords', icon: 'key', label: 'Credentials', color: 'blue' },
+                                { id: 'images', icon: 'image', label: 'Image Vault', color: 'purple' },
+                                { id: 'notes', icon: 'file-text', label: 'Secure Notes', color: 'cyan' },
+                            ].map(item => (
+                                <button
+                                    key={item.id}
+                                    onClick={() => setActiveTab(item.id)}
+                                    className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all ${
+                                        activeTab === item.id 
+                                            ? `bg-${item.color}-500/10 border-${item.color}-500/40 text-${item.color}-400 shadow-xl` 
+                                            : 'bg-white/5 border-transparent text-slate-500 hover:bg-white/10'
+                                    }`}
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <Icon name={item.icon} size={18} />
+                                        <span className="font-bold text-sm tracking-tight">{item.label}</span>
+                                    </div>
+                                    <Icon name="chevron-right" size={14} className={activeTab === item.id ? 'opacity-100' : 'opacity-0'} />
+                                </button>
+                            ))}
+                        </aside>
+
+                        {/* Content */}
+                        <main className="lg:col-span-9 glass rounded-[2rem] p-6 md:p-10 min-h-[500px]">
+                            {activeTab === 'passwords' && (
+                                <div className="space-y-6">
+                                    <div className="flex justify-between items-center mb-4">
+                                        <h3 className="text-xl font-bold">Stored Credentials</h3>
+                                        <button onClick={() => setIsPassModalOpen(true)} className="bg-blue-600 p-2 rounded-xl text-white hover:bg-blue-500 transition-colors">
+                                            <Icon name="plus" />
+                                        </button>
+                                    </div>
+                                    <div className="grid gap-3">
+                                        {passwords.filter(p => p.site.toLowerCase().includes(searchTerm.toLowerCase())).map(p => (
+                                            <div key={p.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/5 group hover:border-blue-500/20 transition-all gap-4">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center font-bold text-blue-400 border border-blue-500/10">{p.site[0]}</div>
+                                                    <div>
+                                                        <div className="font-bold text-white leading-none mb-1">{p.site}</div>
+                                                        <div className="text-[10px] text-slate-500 uppercase font-mono tracking-tighter">{p.user}</div>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <div className="bg-black/40 px-3 py-2 rounded-xl font-mono text-blue-400 text-xs flex gap-3 border border-white/5">
+                                                        <span>{p.visible ? p.pass : '••••••••'}</span>
+                                                        <button onClick={() => setPasswords(passwords.map(i => i.id === p.id ? {...i, visible: !i.visible} : i))} className="hover:text-white transition-colors">
+                                                            <Icon name={p.visible ? "eye-off" : "eye"} size={14} />
+                                                        </button>
+                                                    </div>
+                                                    <button onClick={() => copyToClipboard(p.pass)} className="p-2 text-slate-500 hover:text-white"><Icon name="copy" size={16} /></button>
+                                                    <button onClick={() => setPasswords(passwords.filter(i => i.id !== p.id))} className="p-2 text-slate-500 hover:text-red-400"><Icon name="trash-2" size={16} /></button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {activeTab === 'images' && (
+                                <div className="space-y-6">
+                                    <div className="flex justify-between items-center mb-4">
+                                        <h3 className="text-xl font-bold">Image Repository</h3>
+                                        <label className="cursor-pointer bg-purple-600 p-2 rounded-xl text-white hover:bg-purple-500 transition-colors">
+                                            <Icon name="upload" />
+                                            <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} />
+                                        </label>
+                                    </div>
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                                        {images.map(img => (
+                                            <div key={img.id} className="relative aspect-square rounded-2xl overflow-hidden border border-white/10 group">
+                                                <img src={img.url} className="w-full h-full object-cover transition-transform group-hover:scale-110" />
+                                                <button onClick={() => setImages(images.filter(i => i.id !== img.id))} className="absolute top-2 right-2 p-1.5 bg-red-600 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <Icon name="trash-2" size={12} className="text-white" />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {activeTab === 'notes' && (
+                                <div className="space-y-6">
+                                    <div className="flex justify-between items-center mb-4">
+                                        <h3 className="text-xl font-bold">Secure Notes</h3>
+                                        <button onClick={() => setIsNoteModalOpen(true)} className="bg-cyan-600 p-2 rounded-xl text-white hover:bg-cyan-500 transition-colors">
+                                            <Icon name="plus" />
+                                        </button>
+                                    </div>
+                                    <div className="grid gap-4">
+                                        {notes.map(note => (
+                                            <div key={note.id} className="p-5 rounded-2xl bg-white/5 border border-white/5 relative group">
+                                                <div className="flex justify-between mb-2">
+                                                    <h4 className="font-bold text-w
