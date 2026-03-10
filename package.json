@@ -1,0 +1,6 @@
+{
+  "name": "prime-master-bot",
+  "version": "1.0.0",
+  "description": "PRIME MASTER WA Bot via Fonnte + Netlify",
+  "main": "netlify/functions/webhook.js"
+}
